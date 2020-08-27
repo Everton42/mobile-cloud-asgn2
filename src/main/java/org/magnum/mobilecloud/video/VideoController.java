@@ -23,8 +23,11 @@ import org.magnum.mobilecloud.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 
 @RestController
 public class VideoController {
@@ -55,13 +58,17 @@ public class VideoController {
 	}
 
 	@RequestMapping(value=VIDEO_SVC_PATH + LIKE_PATH, method = RequestMethod.POST)
-	public void likeVideo(@PathVariable("id") long id){
-		registerVideoInteraction(id, true);
+	public void likeVideo(@PathVariable("id") long id, Principal principal, HttpServletResponse response){
+		String user = principal.getName();
+		boolean registered = registerVideoInteraction(id, user,true);
+		if (!registered) response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 	}
 
 	@RequestMapping(value=VIDEO_SVC_PATH + UNLIKE_PATH, method = RequestMethod.POST)
-	public void unlikeVideo(@PathVariable("id") long id){
-		registerVideoInteraction(id, false);
+	public void unlikeVideo(@PathVariable("id") long id, Principal principal, HttpServletResponse response){
+		String user = principal.getName();
+		boolean registered = registerVideoInteraction(id, user,false);
+		if (!registered) response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 	}
 
 	@RequestMapping(value=VIDEO_SVC_PATH + PARAM_ID, method = RequestMethod.GET)
@@ -69,14 +76,15 @@ public class VideoController {
 		return repository.findOne(id);
 	}
 
-	private void registerVideoInteraction(long id, boolean isLike) {
+	private boolean registerVideoInteraction(long id, String userName, boolean isLike) {
 		Video video = repository.findOne(id);
-		long likes = video.getLikes();
 
-		if (isLike) likes++;
-		else likes--;
-
-		video.setLikes(likes);
+		if (!video.isValidUserLike(userName, isLike))
+			return false;
+		video.addLike(userName, isLike);
 		repository.save(video);
+		return true;
 	}
+
+
 }

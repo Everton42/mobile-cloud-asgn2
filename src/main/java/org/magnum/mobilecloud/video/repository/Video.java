@@ -36,7 +36,7 @@ public class Video {
 	private String url;
 	private long duration;
 	private long likes;
-	
+
 	@ElementCollection
 	private Set<String> likedBy = new HashSet<String>();
 	
@@ -125,5 +125,31 @@ public class Video {
 		} else {
 			return false;
 		}
+	}
+
+	public void addLike(String userName, boolean isLike) {
+		boolean isValid = isValidUserLike(userName, isLike);
+		if(!isValid)
+			return;
+
+		long likes = this.getLikes();
+		Set<String> users = this.getLikedBy();
+
+		if (isLike){
+			likes++;
+			users.add(userName);
+		}
+		else{
+			likes--;
+			users.remove(userName);
+		}
+		this.setLikes(likes);
+		this.setLikedBy(users);
+	}
+
+	public boolean isValidUserLike(String userName, boolean isLike) {
+		Set<String> interactions = this.getLikedBy();
+		boolean alreadyLiked = interactions.contains(userName);
+		return !(alreadyLiked && isLike || !alreadyLiked && !isLike);
 	}
 }
